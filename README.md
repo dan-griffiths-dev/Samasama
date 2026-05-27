@@ -1,6 +1,10 @@
 # Samasama Monorepo
 
-Initial monorepo scaffold for the Samasama platform.
+Samasama is a gamified language acquisition platform where users raise a Tamagotchi-style character from infant to teenager by improving their pronunciation, intonation and enunciation.
+
+The learning journey mirrors native language development, progressing from syllable sounds and mouth shapes through nursery rhymes, songs and increasingly complex speech patterns using repetition and memorisation.
+
+Voice analysis and facial recognition technology verify pronunciation and articulation, providing objective feedback as users master the sounds and rhythm of a language.
 
 ## Stack
 
