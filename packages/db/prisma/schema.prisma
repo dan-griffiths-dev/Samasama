@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  LEARNER
+  ADMIN
+}
+
+enum LessonStage {
+  INFANT
+  TODDLER
+}
+
+enum LessonStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ExerciseType {
+  VOWEL
+  SYLLABLE
+  PHRASE
+}
+
+enum ProgressStatus {
+  LOCKED
+  AVAILABLE
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum AttemptSource {
+  MOBILE
+  API
+}
+
+enum AttemptStatus {
+  PENDING
+  SCORED
+  FAILED
+}
+
+enum AnalysisStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum FeedbackCode {
+  PITCH_STEADY
+  PITCH_VARIATION_REQUIRED
+  TIMING_REPEAT_REQUIRED
+  CLARITY_RETRY_REQUIRED
+  ENERGY_INCREASE_REQUIRED
+}
+
+enum SpriteStage {
+  INFANT
+  TODDLER
+}
+
+enum SpriteMood {
+  CALM
+  CURIOUS
+  SLEEPY
+}
+
+enum SpriteGrowthTrigger {
+  LESSON_COMPLETION
+  MANUAL
+}
+
+model User {
+  id                  String              @id @default(uuid())
+  email               String              @unique
+  displayName         String              @map("display_name")
+  passwordHash        String              @map("password_hash")
+  role                UserRole            @default(LEARNER)
+  refreshTokens       RefreshToken[]
+  lessonProgress      UserLessonProgress[]
+  attempts            Attempt[]
+  spriteState         SpriteState?
+  spriteGrowthEvents  SpriteGrowthEvent[]
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Lesson {
+  id                     String                 @id @default(uuid())
+  code                   String                 @unique
+  title                  String
+  description            String?
+  stage                  LessonStage
+  status                 LessonStatus           @default(PUBLISHED)
+  sortOrder              Int                    @map("sort_order")
+  exercises              Exercise[]
+  prerequisites          LessonPrerequisite[]   @relation("LessonPrerequisiteLesson")
+  requiredFor            LessonPrerequisite[]   @relation("LessonPrerequisiteRequired")
+  userProgress           UserLessonProgress[]
+  attempts               Attempt[]
+  spriteGrowthEvents     SpriteGrowthEvent[]
+  createdAt              DateTime               @default(now()) @map("created_at")
+  updatedAt              DateTime               @updatedAt @map("updated_at")
+
+  @@index([stage, sortOrder])
+  @@map("lessons")
+}
+
+model Exercise {
+  id               String       @id @default(uuid())
+  lessonId         String       @map("lesson_id")
+  lesson           Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  code             String       @unique
+  title            String
+  promptText       String       @map("prompt_text")
+  exerciseType     ExerciseType @map("exercise_type")
+  sortOrder        Int          @map("sort_order")
+  attempts         Attempt[]
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  @@index([lessonId, sortOrder])
+  @@map("exercises")
+}
+
+model LessonPrerequisite {
+  lessonId             String   @map("lesson_id")
+  prerequisiteLessonId String   @map("prerequisite_lesson_id")
+  lesson               Lesson   @relation("LessonPrerequisiteLesson", fields: [lessonId], references: [id], onDelete: Cascade)
+  prerequisiteLesson   Lesson   @relation("LessonPrerequisiteRequired", fields: [prerequisiteLessonId], references: [id], onDelete: Restrict)
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@id([lessonId, prerequisiteLessonId])
+  @@index([prerequisiteLessonId])
+  @@map("lesson_prerequisites")
+}
+
+model UserLessonProgress {
+  id            String         @id @default(uuid())
+  userId        String         @map("user_id")
+  lessonId      String         @map("lesson_id")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson        Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  status        ProgressStatus @default(LOCKED)
+  unlockedAt    DateTime?      @map("unlocked_at")
+  startedAt     DateTime?      @map("started_at")
+  completedAt   DateTime?      @map("completed_at")
+  lastAttemptAt DateTime?      @map("last_attempt_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@unique([userId, lessonId])
+  @@index([userId, status])
+  @@index([lessonId, status])
+  @@map("user_lesson_progress")
+}
+
+model Attempt {
+  id                 String               @id @default(uuid())
+  userId             String               @map("user_id")
+  lessonId           String               @map("lesson_id")
+  exerciseId         String               @map("exercise_id")
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  lesson             Lesson               @relation(fields: [lessonId], references: [id], onDelete: Restrict)
+  exercise           Exercise             @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+  source             AttemptSource        @default(MOBILE)
+  status             AttemptStatus        @default(PENDING)
+  transcript         String?
+  mediaPath          String?              @map("media_path")
+  progressionPassed  Boolean?             @map("progression_passed")
+  progressionEvaluatedAt DateTime?        @map("progression_evaluated_at")
+  submittedAt        DateTime             @default(now()) @map("submitted_at")
+  voiceAnalysisResult VoiceAnalysisResult?
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+
+  @@index([userId, createdAt])
+  @@index([lessonId, exerciseId])
+  @@map("attempts")
+}
+
+model VoiceAnalysisResult {
+  id                    String         @id @default(uuid())
+  attemptId             String         @unique @map("attempt_id")
+  attempt               Attempt        @relation(fields: [attemptId], references: [id], onDelete: Restrict)
+  status                AnalysisStatus @default(PENDING)
+  feedbackCode          FeedbackCode   @map("feedback_code")
+  analysisVersion       String         @map("analysis_version")
+  summary               String?
+  metricsJson           Json?          @map("metrics_json")
+  completedAt           DateTime?      @map("completed_at")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  @@map("voice_analysis_results")
+}
+
+model SpriteState {
+  id              String              @id @default(uuid())
+  userId          String              @unique @map("user_id")
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStage    SpriteStage         @default(INFANT) @map("current_stage")
+  currentMood     SpriteMood          @default(CALM) @map("current_mood")
+  growthPoints    Int                 @default(0) @map("growth_points")
+  lastFedAt       DateTime?           @map("last_fed_at")
+  growthEvents    SpriteGrowthEvent[]
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@map("sprite_states")
+}
+
+model SpriteGrowthEvent {
+  id             String              @id @default(uuid())
+  userId         String              @map("user_id")
+  spriteStateId  String              @map("sprite_state_id")
+  lessonId       String?             @map("lesson_id")
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  spriteState    SpriteState         @relation(fields: [spriteStateId], references: [id], onDelete: Cascade)
+  lesson         Lesson?             @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  fromStage      SpriteStage         @map("from_stage")
+  toStage        SpriteStage         @map("to_stage")
+  trigger        SpriteGrowthTrigger
+  notes          String?
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  @@index([userId, createdAt])
+  @@index([spriteStateId])
+  @@unique([userId, lessonId, trigger, toStage])
+  @@map("sprite_growth_events")
+}

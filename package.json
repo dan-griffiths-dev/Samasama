@@ -1,0 +1,24 @@
+{
+  "name": "samasama",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api:dev": "npm run dev --workspace @samasama/api",
+    "api:start": "npm run start --workspace @samasama/api",
+    "api:test": "npm run test --workspace @samasama/api",
+    "voice-analysis:venv": "python3.11 -m venv apps/voice-analysis/.venv",
+    "voice-analysis:install": "apps/voice-analysis/.venv/bin/pip install -r apps/voice-analysis/requirements.txt",
+    "voice-analysis:dev": "apps/voice-analysis/.venv/bin/uvicorn app.main:app --reload --app-dir apps/voice-analysis --host 0.0.0.0 --port 8001",
+    "voice-analysis:start": "apps/voice-analysis/.venv/bin/uvicorn app.main:app --app-dir apps/voice-analysis --host 0.0.0.0 --port 8001",
+    "mobile:dev": "npm run dev --workspace @samasama/mobile",
+    "db:generate": "npm run generate --workspace @samasama/db",
+    "db:migrate": "npm run migrate:deploy --workspace @samasama/db",
+    "db:seed": "npm run seed --workspace @samasama/db"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

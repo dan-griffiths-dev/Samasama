@@ -1,0 +1,28 @@
+{
+  "name": "@samasama/api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx src/server.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/jwt": "^9.1.0",
+    "@samasama/db": "*",
+    "@samasama/shared": "*",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.3.3",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
+  }
+}

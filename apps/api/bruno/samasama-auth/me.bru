@@ -1,0 +1,13 @@
+meta {
+  name: Me
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/me
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}

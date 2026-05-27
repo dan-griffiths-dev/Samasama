@@ -1,0 +1,15 @@
+node_modules
+.expo
+.expo-shared
+dist
+build
+.DS_Store
+.env
+.venv
+__pycache__
+*.pyc
+coverage
+apps/voice-analysis/.venv
+packages/db/generated
+codex_resume.md
+ticket_completion_log.md
